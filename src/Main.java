@@ -9,7 +9,6 @@ import java.awt.event.WindowEvent;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Timer;
 
 public class Main extends JFrame{
@@ -17,8 +16,6 @@ public class Main extends JFrame{
     private JTextArea txtAr_topiclist;
     private JTextField txt_username;
     private static JTextField texsttext;
-
-    HashMap<String, String> owner_name;
 
     private String username, password, topicSelected;
     private int topicNumber;
@@ -36,8 +33,8 @@ public class Main extends JFrame{
         password = LoginScreen.getPassword();
         initInterface(username, password);
 
-        //java.util.Timer timer = new Timer();
-        //timer.schedule(new TopicSearcher(txtAr_topiclist), 0, 5000);
+        java.util.Timer timer = new Timer();
+        timer.schedule(new TopicSearcher(txtAr_topiclist), 0, 5000);
     }
 
     private void initInterface(String un, String pwd) {
@@ -163,30 +160,28 @@ public class Main extends JFrame{
         if (topicSelected == null ){
             return;
         }
-
         try{
             // Receiving Topic Nr.
             QueueStatus template = new QueueStatus();
-            QueueStatus topicStatus = (QueueStatus) space.take(template, null, Long.MAX_VALUE);
+            QueueStatus topicStatus = (QueueStatus) space.take(template, null, 1000);
             topicNumber = topicStatus.nextTopic;
 
             // Creating / Writing a new topic to the space.
             QueueItem newTopic = new QueueItem(topicNumber, topicSelected, username, password, getTimestamp(), "", username);
             space.write(newTopic, null, Lease.FOREVER);
 
+
+            TopicList listTemplate = new TopicList(topicNumber, topicSelected, username);
+            space.write(listTemplate, null, Lease.FOREVER);
+
             // Incrementing Topic Nr.
             topicStatus.incrementTopicNr();
             space.write(topicStatus, null, Lease.FOREVER);
-            //appendToTextArea();
 
             //Calling Topic room GUI.
             new TopicRoom2(topicNumber, topicSelected, username, password, getTimestamp(), "", username);
 
             // Adding newly created topic to the existing list.
-            //TopicList2 listTemplate = new TopicList2();
-            //TopicList2 newListItem = (TopicList2) space.take(listTemplate, null, Long.MAX_VALUE);
-            //newListItem.addToList(topicNumber, topicSelected);
-            //space.write(newListItem, null, Lease.FOREVER);
         }catch(Exception e){
             e.printStackTrace();
         }
@@ -202,9 +197,6 @@ public class Main extends JFrame{
 
             String timestamp = getTimestamp();
             String comment = texsttext.getText();
-
-            //owner_name = new HashMap<>();
-            //owner_name.put(topicSelected, username);
 
             QueueItem newTopic = new QueueItem(topicNumber, "dog", username, password, timestamp, comment, username);
             space.write(newTopic, null, Lease.FOREVER);

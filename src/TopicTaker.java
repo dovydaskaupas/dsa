@@ -1,10 +1,11 @@
+import net.jini.core.lease.Lease;
 import net.jini.space.JavaSpace;
 
 import javax.swing.*;
 import java.util.TimerTask;
 
 /**
- * Helper class, that is being called (from TopicRoom2 class, by Timer.scheduler) every X second/s,
+ * Helper class, that is being called (from TopicRoom class, by Timer.scheduler) every X second/s,
  * to check if anything new has been posted to the Topic room.
  */
 public class TopicTaker extends TimerTask {
@@ -38,10 +39,10 @@ public class TopicTaker extends TimerTask {
             QueueItem nextJob = (QueueItem) space.take(qiTemplate,null, 950);
 
             if (nextJob == null) {
-                System.out.println("No Topics");
+                //System.out.println("No Topics");
             } else {
-                System.out.println("Topic rceived");
-                int nextJobNumber = nextJob._topicNumber;
+                //System.out.println("Topic rceived");
+                int topicNumber = nextJob._topicNumber;
                 String topic_name = nextJob._topicName;
                 String username = nextJob._userName;
                 String password = nextJob._password;
@@ -49,15 +50,7 @@ public class TopicTaker extends TimerTask {
                 String comm = nextJob._comment;
                 String topicOwner = nextJob._topicOwner;
 
-                System.out.println("Job nr: "+ nextJobNumber+"");
-                System.out.println("Username: "+ username);
-                System.out.println("Topic name: "+topic_name);
-                System.out.println("Password: "+password);
-                System.out.println("Comment: "+comm);
-                System.out.println("timestamp: "+ ts);
-                System.out.println("owner: "+ topicOwner);
-
-                lable.setText("Topic Owner: "  + topicOwner + "              " + "Topic Name: " + nextJobNumber+ "." + topicSelected);
+                lable.setText("Topic Owner: "  + topicOwner + "              " + "Topic Name: " + topicNumber+ "." + topicSelected);
 
                 if (!comm.equals("")){
                     txtArea.append("->" + ts + ", " + username + " says: " + comm + "\n");

@@ -49,7 +49,6 @@ public class TopicRoom2 extends JFrame {
             }
         });
 
-        System.out.println("Frame created");
         Container base_panel = frame.getContentPane();
         base_panel.setLayout(new BorderLayout());
 
@@ -58,7 +57,7 @@ public class TopicRoom2 extends JFrame {
         jPanel_north.setLayout(new FlowLayout());
 
         lbl_topicname = new JLabel();
-        jPanel_north.add(lbl_topicname);System.out.println("Panel north");
+        jPanel_north.add(lbl_topicname);
 
         // Panel CENTRE
         JPanel jPanel_centre = new JPanel();
@@ -67,7 +66,7 @@ public class TopicRoom2 extends JFrame {
         txtAr_chatArea = new JTextArea();
         JScrollPane jScrollPane = new JScrollPane(txtAr_chatArea);
         txtAr_chatArea.setEditable(false);
-        jPanel_centre.add(jScrollPane, "Center");System.out.println("Panel centre");
+        jPanel_centre.add(jScrollPane, "Center");
 
         // Panel SOUTH
         JPanel jPanel_south = new JPanel();
@@ -83,31 +82,26 @@ public class TopicRoom2 extends JFrame {
 
         JButton btn_post = new JButton();
         btn_post.setText("Post");
-        jPanel_south.add(btn_post); System.out.println("Panel south");
+        jPanel_south.add(btn_post);
 
         frame.setResizable(false);
         base_panel.setPreferredSize(new Dimension(500, 700));
         base_panel.add(jPanel_north, "North");
         base_panel.add(jPanel_centre, "Center");
         base_panel.add(jPanel_south, "South");
-        System.out.println("All initiated");
+
         frame.pack();
-        System.out.println("pack()");
         frame.setVisible(true);
-        System.out.println("visib true");
+
         btn_post.addActionListener (new java.awt.event.ActionListener () {
             public void actionPerformed (java.awt.event.ActionEvent evt) {
                 postComment(evt);
             }
         });
-        System.out.println("finish");
     }
 
     private void postComment(ActionEvent event){
         try{
-            //QueueStatus template = new QueueStatus();
-            //QueueStatus topicStatus = (QueueStatus) space.take(template, null, 2000);
-            //int topicNumber = topicStatus.nextTopic;
             QueueItem temp = new QueueItem();
             String tn = temp._topicName;
             String to = temp._topicOwner;
@@ -118,8 +112,6 @@ public class TopicRoom2 extends JFrame {
                 space.write(newTopic, null, Lease.FOREVER);
                 txt_comment.setText("");
             }
-            //topicStatus.incrementTopicNr();
-            //space.write(topicStatus, null, Lease.FOREVER);
         }catch(Exception e){
             e.printStackTrace();
         }
