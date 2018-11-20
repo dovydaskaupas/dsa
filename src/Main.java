@@ -15,9 +15,9 @@ public class Main extends JFrame{
 
     private JTextArea txtAr_topiclist;
     private JTextField txt_username;
-    private static JTextField texsttext;
+    private static JTextField txt_comment;
 
-    private String username, password, topicSelected;
+    private String username, password, topicSelected, topicName, topicOwner;
     private int topicNumber;
 
     private JavaSpace space;
@@ -108,13 +108,13 @@ public class Main extends JFrame{
         JPanel newpanel = new JPanel();
         newpanel.setLayout(new GridLayout(1, 2, 10, 10));
 
-        texsttext = new JTextField(16);
-        texsttext.setText("");
-        newpanel.add(texsttext);
+        txt_comment = new JTextField(16);
+        txt_comment.setText("");
+        newpanel.add(txt_comment);
 
-        JButton ok = new JButton();
-        ok.setText("Post");
-        newpanel.add(ok);
+        JButton btn_comment = new JButton();
+        btn_comment.setText("Post");
+        newpanel.add(btn_comment);
 
 
         frame.setResizable(false);
@@ -143,7 +143,7 @@ public class Main extends JFrame{
             }
         });
 
-        ok.addActionListener (new java.awt.event.ActionListener () {
+        btn_comment.addActionListener (new java.awt.event.ActionListener () {
             public void actionPerformed (java.awt.event.ActionEvent evt) {
                 okPressed();
             }
@@ -167,11 +167,11 @@ public class Main extends JFrame{
             topicNumber = topicStatus.nextTopic;
 
             // Creating / Writing a new topic to the space.
-            QueueItem newTopic = new QueueItem(topicNumber, topicSelected, username, password, getTimestamp(), "", username);
+            QueueItem newTopic = new QueueItem(topicNumber, topicSelected, username, password, getTimestamp(), "", 1, username);
             space.write(newTopic, null, Lease.FOREVER);
 
 
-            TopicList listTemplate = new TopicList(topicNumber, topicSelected, username);
+            TopicList listTemplate = new TopicList(topicNumber, topicSelected, username, 1);
             space.write(listTemplate, null, Lease.FOREVER);
 
             // Incrementing Topic Nr.
@@ -187,39 +187,68 @@ public class Main extends JFrame{
         }
     }
 
+    private void joinTopic() {
+        topicSelected = "";
+        topicSelected = JOptionPane.showInputDialog("Type in the TOPIC NUMBER to Join");
+        if (!topicSelected.equals("")){
+            int inputReceived = 0;
+            try {
+                inputReceived = Integer.parseInt(topicSelected);
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(null, "Input must be a number!");
+            }
 
-    private  void okPressed(){
+            try {
+                TopicList template = new TopicList();
+                template._id = inputReceived;
 
-        try{
-            QueueStatus template = new QueueStatus();
-            QueueStatus topicStatus = (QueueStatus) space.take(template, null, Long.MAX_VALUE);
-            topicNumber = topicStatus.nextTopic;
+                TopicList topicToTake = (TopicList) space.take(template, null, 900);
+                topicToTake.incrementCommentNr();
 
-            String timestamp = getTimestamp();
-            String comment = texsttext.getText();
+                int topicNr = topicToTake._id;
+                topicName = topicToTake._topicName;
+                topicOwner = topicToTake._topicOwner;
+                int commentNr = topicToTake._commentNr;
 
-            QueueItem newTopic = new QueueItem(topicNumber, "dog", username, password, timestamp, comment, username);
-            space.write(newTopic, null, Lease.FOREVER);
+                QueueItem joinThis = new QueueItem(topicNr, topicName, username, password, getTimestamp(), "", commentNr, topicOwner);
+                space.write(joinThis, null, Lease.FOREVER);
 
-            topicStatus.incrementTopicNr();
-            space.write(topicStatus, null, Lease.FOREVER);
-            appendToTextArea();
+                space.write(topicToTake, null, Lease.FOREVER);
 
-            // Open Topic Rooom chat
-        }catch(Exception e){
-            e.printStackTrace();
+                new TopicRoom2(topicNr, topicName, username, password, getTimestamp(), "", topicOwner);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
-
     }
 
-    private void joinTopic(){
-        topicSelected = JOptionPane.showInputDialog("Select a Topic to Join");
-        String owner = null;
 
+        private void okPressed(){
+          /*  try{
+                QueueItem temp = new QueueItem();
+                String tn = temp._topicName;
+                String to = temp._topicOwner;
+
+                String comment = txt_comment.getText();
+                if (!comment.equals("")){
+                    QueueItem newTopic = new QueueItem(topicNumber, topicName, username, password, Main.getTimestamp(), comment, topicOwner);
+                    space.write(newTopic, null, Lease.FOREVER);
+                    txt_comment.setText("");
+                }
+            }catch(Exception e){
+                e.printStackTrace();
+            }*/
+        }
+
+
+        /*
         try{
             QueueItem qiTemplate = new QueueItem();
             qiTemplate._topicName = topicSelected;  // THIS IS THE MAIN CHANGE.  Set the destination printer name in the template so as to retrieve only the correct print jobs
             QueueItem nextJob = (QueueItem) space.readIfExists(qiTemplate,null, 2000);
+
+            TopicList template = new TopicList();
+            template._id = Integer.parseInt(topicSelected);
             if (nextJob == null) {
                 JOptionPane.showMessageDialog(null, "This topic does not exist.", "Name Error!", JOptionPane.ERROR_MESSAGE);
             } else {
@@ -232,7 +261,7 @@ public class Main extends JFrame{
             topicNumber = topicStatus.nextTopic;
 
             String timestamp = getTimestamp();
-            String comment = texsttext.getText();
+            String comment = txt_comment.getText();
 
             QueueItem newTopic = new QueueItem(topicNumber, topicSelected, username, password, timestamp, comment, owner);
             space.write(newTopic, null, Lease.FOREVER);
@@ -241,8 +270,7 @@ public class Main extends JFrame{
             space.write(topicStatus, null, Lease.FOREVER);
         }catch(Exception e){
             e.printStackTrace();
-        }
-    }
+        }*/
 
     private void deleteTopic(ActionEvent event){
         topicSelected = JOptionPane.showInputDialog("Select a Topic to Delete");

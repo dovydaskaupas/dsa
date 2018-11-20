@@ -1,7 +1,7 @@
-import net.jini.core.lease.Lease;
 import net.jini.space.JavaSpace;
 
 import javax.swing.*;
+import java.util.ArrayList;
 import java.util.TimerTask;
 
 /**
@@ -33,31 +33,83 @@ public class TopicTaker extends TimerTask {
     }
 
     private void checkSpace(){
-        try {
-            QueueItem qiTemplate = new QueueItem();
-            qiTemplate._topicName = topicSelected; // THIS IS THE MAIN CHANGE.  Set the destination printer name in the template so as to retrieve only the correct print jobs
-            QueueItem nextJob = (QueueItem) space.take(qiTemplate,null, 950);
+        ArrayList<String> comments = new ArrayList<>();
+        String comment = "";
 
-            if (nextJob == null) {
+        try {
+            TopicList tl = new TopicList();
+            tl._topicName = topicSelected;
+            TopicList result = (TopicList) space.read(tl,null, 500);
+
+            int commentAmount = result._commentNr;
+
+            for(int i = 1; i < commentAmount + 1; i++){
+                QueueItem template = new QueueItem();
+                template._commentNr = i;
+                QueueItem queueItem = (QueueItem) space.read(template,null, 500);
+
+                    int topicNumber = queueItem._topicNumber;
+                    String topic_name = queueItem._topicName;
+                    String username = queueItem._userName;
+                    String password = queueItem._password;
+                    String ts = queueItem._timestamp;
+                    String comm = queueItem._comment;
+                    String topicOwner = queueItem._topicOwner;
+                    int commentNumber = queueItem._commentNr;
+
+                    lable.setText("Topic Owner: "  + topicOwner + "              " + "Topic Name: " + topicNumber+ "." + topicSelected);
+
+                    if (!comm.equals("")){
+                        comment = "->" + ts + ", " + username + " says: " + comm + commentNumber + "\n";
+                    }else{
+                        comment = "->" + ts + ", " + username + " joined the topic room." + commentNumber + "\n";
+                    }
+
+                    if (!comments.contains(comment)){
+                        comments.add(comment);
+                    }
+
+                    txtArea.setText("");
+                    for (String com : comments){
+                        txtArea.append(com);
+                    }
+
+                    /*
+                    txtArea.append("");
+                    if (!comm.equals("")){
+                        txtArea.append("->" + ts + ", " + username + " says: " + comm + commentNumber + "\n");
+                    }else{
+                        txtArea.append("->" + ts + ", " + username + " joined the topic room." + commentNumber + "\n");
+                    }
+                    */
+                //}
+
+            }
+
+            /*
+            if (queueItem == null) {
                 //System.out.println("No Topics");
             } else {
-                //System.out.println("Topic rceived");
-                int topicNumber = nextJob._topicNumber;
-                String topic_name = nextJob._topicName;
-                String username = nextJob._userName;
-                String password = nextJob._password;
-                String ts = nextJob._timestamp;
-                String comm = nextJob._comment;
-                String topicOwner = nextJob._topicOwner;
+                //System.out.println("Topic received");
+                int topicNumber = queueItem._topicNumber;
+                String topic_name = queueItem._topicName;
+                String username = queueItem._userName;
+                String password = queueItem._password;
+                String ts = queueItem._timestamp;
+                String comm = queueItem._comment;
+                String topicOwner = queueItem._topicOwner;
+                int commentNumber = queueItem._commentNr;
 
                 lable.setText("Topic Owner: "  + topicOwner + "              " + "Topic Name: " + topicNumber+ "." + topicSelected);
 
+                txtArea.append("");
                 if (!comm.equals("")){
-                    txtArea.append("->" + ts + ", " + username + " says: " + comm + "\n");
+                    txtArea.append("->" + ts + ", " + username + " says: " + comm + commentNumber + "\n");
                 }else{
-                    txtArea.append("->" + ts + ", " + username + " joined the topic room." + "\n");
+                    txtArea.append("->" + ts + ", " + username + " joined the topic room." + commentNumber + "\n");
                 }
-            }
+
+            }*/
         }  catch ( Exception e) {
             e.printStackTrace();
         }

@@ -102,14 +102,21 @@ public class TopicRoom2 extends JFrame {
 
     private void postComment(ActionEvent event){
         try{
-            QueueItem temp = new QueueItem();
-            String tn = temp._topicName;
-            String to = temp._topicOwner;
+            // Takes the TopicList object from the space by its id, then increments its comment number and passes it to the QueueItem object.
+            // This helps to track individual comments.
+            TopicList topicList = new TopicList();
+            topicList._id = topicNumber;
+            TopicList result = (TopicList) space.take(topicList, null, 500);
 
             String comment = txt_comment.getText();
             if (!comment.equals("")){
-                QueueItem newTopic = new QueueItem(topicNumber, topicName, userName, password, Main.getTimestamp(), comment, ownerName);
+                result.incrementCommentNr();
+                int commentNr = result._commentNr;
+
+                QueueItem newTopic = new QueueItem(topicNumber, topicName, userName, password, Main.getTimestamp(), comment, commentNr, ownerName);
                 space.write(newTopic, null, Lease.FOREVER);
+
+                space.write(result, null, Lease.FOREVER);
                 txt_comment.setText("");
             }
         }catch(Exception e){
