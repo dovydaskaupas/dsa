@@ -8,14 +8,14 @@ import java.util.TimerTask;
  * Helper class, that is being called (from TopicRoom class, by Timer.scheduler) every X second/s,
  * to check if anything new has been posted to the Topic room.
  */
-public class TopicTaker extends TimerTask {
+public class CommentPublisher extends TimerTask {
 
     private JavaSpace space;
     private String topicSelected;
     private JTextArea txtArea;
     private JLabel lable;
 
-    public TopicTaker(String topic, JTextArea txtAr, JLabel lbl){
+    public CommentPublisher(String topic, JTextArea txtAr, JLabel lbl){
         space = SpaceUtils.getSpace();
         if (space == null){
             System.err.println("Failed to find the javaspace");

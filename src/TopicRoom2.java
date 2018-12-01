@@ -17,6 +17,7 @@ public class TopicRoom2 extends JFrame {
     private static JTextArea txtAr_chatArea;
     private static JLabel lbl_topicname;
     private JTextField txt_comment;
+    private JCheckBox cb_privateMessaging;
 
     TopicRoom2(int topicNr, String topic, String userN, String pwd, String timeS, String comm, String ownerN){
         space = SpaceUtils.getSpace();
@@ -34,9 +35,9 @@ public class TopicRoom2 extends JFrame {
         // comment = comm; // redundant!?
         ownerName = ownerN;
 
-        // Runs Helpers.TopicTaker class every X seconds to update the Topic room's text_area.
+        // Runs Helpers.CommentPublisher class every X seconds to update the Topic room's text_area.
         Timer timer = new Timer();
-        timer.schedule(new TopicTaker(topicName, txtAr_chatArea, lbl_topicname), 0, 2000);
+        timer.schedule(new CommentPublisher(topicName, txtAr_chatArea, lbl_topicname), 0, 2000);
     }
 
     private void initInterface(){
@@ -70,7 +71,7 @@ public class TopicRoom2 extends JFrame {
 
         // Panel SOUTH
         JPanel jPanel_south = new JPanel();
-        jPanel_south.setLayout(new GridLayout(1, 3, 10, 10));
+        jPanel_south.setLayout(new GridLayout(1, 5, 10, 10));
 
         JLabel lbl_comment = new JLabel();
         lbl_comment.setText("Write a comment here:");
@@ -84,8 +85,16 @@ public class TopicRoom2 extends JFrame {
         btn_post.setText("Post");
         jPanel_south.add(btn_post);
 
+        JLabel lbl_private = new JLabel();
+        lbl_private.setText("Set Private:");
+        jPanel_south.add(lbl_private);
+
+        cb_privateMessaging = new JCheckBox();
+        cb_privateMessaging.setSelected(false);
+        jPanel_south.add(cb_privateMessaging);
+
         frame.setResizable(false);
-        base_panel.setPreferredSize(new Dimension(500, 700));
+        base_panel.setPreferredSize(new Dimension(550, 700));
         base_panel.add(jPanel_north, "North");
         base_panel.add(jPanel_centre, "Center");
         base_panel.add(jPanel_south, "South");
@@ -104,20 +113,43 @@ public class TopicRoom2 extends JFrame {
         try{
             // Takes the TopicList object from the space by its id, then increments its comment number and passes it to the QueueItem object.
             // This helps to track individual comments.
-            TopicList topicList = new TopicList();
-            topicList._id = topicNumber;
-            TopicList result = (TopicList) space.take(topicList, null, 500);
 
-            String comment = txt_comment.getText();
-            if (!comment.equals("")){
-                result.incrementCommentNr();
-                int commentNr = result._commentNr;
 
-                QueueItem newTopic = new QueueItem(topicNumber, topicName, userName, password, Main.getTimestamp(), comment, commentNr, ownerName);
-                space.write(newTopic, null, Lease.FOREVER);
+            if (cb_privateMessaging.isSelected()){
+                TopicList topicList = new TopicList();
+                topicList._id = topicNumber;
+                topicList._topicOwner = ownerName;
 
-                space.write(result, null, Lease.FOREVER);
-                txt_comment.setText("");
+
+                TopicList result = (TopicList) space.read(topicList, null, 500);
+
+                String comment = txt_comment.getText();
+                if(!comment.equals("")){
+                    result.incrementCommentNr();
+                    int commentNr = result._commentNr;
+
+                    QueueItem newTopic = new QueueItem(topicNumber, topicName, userName, password, Main.getTimestamp(), comment, commentNr, ownerName);
+                    space.write(newTopic, null, Lease.FOREVER);
+
+                    space.write(result, null, Lease.FOREVER);
+                    txt_comment.setText("");
+                }
+            }else{
+                TopicList topicList = new TopicList();
+                topicList._id = topicNumber;
+                TopicList result = (TopicList) space.take(topicList, null, 500);
+
+                String comment = txt_comment.getText();
+                if (!comment.equals("")){
+                    result.incrementCommentNr();
+                    int commentNr = result._commentNr;
+
+                    QueueItem newTopic = new QueueItem(topicNumber, topicName, userName, password, Main.getTimestamp(), comment, commentNr, ownerName);
+                    space.write(newTopic, null, Lease.FOREVER);
+
+                    space.write(result, null, Lease.FOREVER);
+                    txt_comment.setText("");
+                }
             }
         }catch(Exception e){
             e.printStackTrace();
