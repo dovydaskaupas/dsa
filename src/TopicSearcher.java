@@ -7,7 +7,7 @@ import java.util.TimerTask;
 /**
  * A helper class, that is being called (from Main class, by Timer.scheduler) every X second/s,
  * to check if any TopicList objects been added to the space. If so, they are printed to the
- * accessible topic list
+ * accessible topic list.
  */
 public class TopicSearcher extends TimerTask {
     private JavaSpace space;

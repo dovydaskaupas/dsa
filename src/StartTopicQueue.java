@@ -6,7 +6,7 @@ public class StartTopicQueue {
     
     private static final long ONE_SECOND = 1000;  // one thousand milliseconds
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         System.out.println("Z");
         JavaSpace space = SpaceUtils.getSpace();
 

@@ -15,9 +15,8 @@ public class TopicRoom2 extends JFrame {
     private static int topicNumber;
     private JavaSpace space;
     private static JTextArea txtAr_chatArea;
-    private static JLabel lbl_topicname;
+    private static JLabel lbl_topicName;
     private JTextField txt_comment;
-    private JCheckBox cb_privateMessaging;
 
     TopicRoom2(int topicNr, String topic, String userN, String pwd, String timeS, String comm, String ownerN){
         space = SpaceUtils.getSpace();
@@ -37,7 +36,7 @@ public class TopicRoom2 extends JFrame {
 
         // Runs Helpers.CommentPublisher class every X seconds to update the Topic room's text_area.
         Timer timer = new Timer();
-        timer.schedule(new CommentPublisher(topicName, txtAr_chatArea, lbl_topicname), 0, 2000);
+        timer.schedule(new CommentPublisher(topicName, txtAr_chatArea, lbl_topicName, userName), 0, 2000);
     }
 
     private void initInterface(){
@@ -57,8 +56,8 @@ public class TopicRoom2 extends JFrame {
         JPanel jPanel_north = new JPanel();
         jPanel_north.setLayout(new FlowLayout());
 
-        lbl_topicname = new JLabel();
-        jPanel_north.add(lbl_topicname);
+        lbl_topicName = new JLabel();
+        jPanel_north.add(lbl_topicName);
 
         // Panel CENTRE
         JPanel jPanel_centre = new JPanel();
@@ -89,7 +88,7 @@ public class TopicRoom2 extends JFrame {
         lbl_private.setText("Set Private:");
         jPanel_south.add(lbl_private);
 
-        cb_privateMessaging = new JCheckBox();
+        JCheckBox cb_privateMessaging = new JCheckBox();
         cb_privateMessaging.setSelected(false);
         jPanel_south.add(cb_privateMessaging);
 
@@ -111,45 +110,25 @@ public class TopicRoom2 extends JFrame {
 
     private void postComment(ActionEvent event){
         try{
-            // Takes the TopicList object from the space by its id, then increments its comment number and passes it to the QueueItem object.
-            // This helps to track individual comments.
 
+            String comment = txt_comment.getText();
 
-            if (cb_privateMessaging.isSelected()){
-                TopicList topicList = new TopicList();
-                topicList._id = topicNumber;
-                topicList._topicOwner = ownerName;
+            if (!comment.equals("")){
 
-
-                TopicList result = (TopicList) space.read(topicList, null, 500);
-
-                String comment = txt_comment.getText();
-                if(!comment.equals("")){
-                    result.incrementCommentNr();
-                    int commentNr = result._commentNr;
-
-                    QueueItem newTopic = new QueueItem(topicNumber, topicName, userName, password, Main.getTimestamp(), comment, commentNr, ownerName);
-                    space.write(newTopic, null, Lease.FOREVER);
-
-                    space.write(result, null, Lease.FOREVER);
-                    txt_comment.setText("");
-                }
-            }else{
+                // Takes the TopicList object from the space by its id, then increments its comment number and passes it to the QueueItem object.
+                // This helps to track individual comments.
                 TopicList topicList = new TopicList();
                 topicList._id = topicNumber;
                 TopicList result = (TopicList) space.take(topicList, null, 500);
 
-                String comment = txt_comment.getText();
-                if (!comment.equals("")){
-                    result.incrementCommentNr();
-                    int commentNr = result._commentNr;
+                result.incrementCommentNr();
+                int commentNr = result._commentNr;
 
-                    QueueItem newTopic = new QueueItem(topicNumber, topicName, userName, password, Main.getTimestamp(), comment, commentNr, ownerName);
-                    space.write(newTopic, null, Lease.FOREVER);
+                QueueItem newTopic = new QueueItem(topicNumber, topicName, userName, password, Main.getTimestamp(), comment, commentNr, ownerName);
+                space.write(newTopic, null, Lease.FOREVER);
 
-                    space.write(result, null, Lease.FOREVER);
-                    txt_comment.setText("");
-                }
+                space.write(result, null, Lease.FOREVER);
+                txt_comment.setText("");
             }
         }catch(Exception e){
             e.printStackTrace();

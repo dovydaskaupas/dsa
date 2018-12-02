@@ -3,21 +3,18 @@ import net.jini.space.JavaSpace;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Timer;
 
 public class Main extends JFrame{
 
-    private JTextArea txtAr_topiclist;
-    private JTextField txt_username;
-    private static JTextField txt_comment;
+    private JTextArea txtAr_topicList;
+    private JTextField txt_userName;
 
-    private String username, password, topicSelected, topicName, topicOwner;
+    private String userName, password, topicSelected, topicName, topicOwner;
     private int topicNumber;
 
     private JavaSpace space;
@@ -29,12 +26,12 @@ public class Main extends JFrame{
             System.exit(1);
         }
 
-        username = LoginScreen.getUsername();
+        userName = LoginScreen.getUsername();
         password = LoginScreen.getPassword();
-        initInterface(username, password);
+        initInterface(userName, password);
 
         java.util.Timer timer = new Timer();
-        timer.schedule(new TopicSearcher(txtAr_topiclist), 0, 5000);
+        timer.schedule(new TopicSearcher(txtAr_topicList), 0, 5000);
     }
 
     private void initInterface(String un, String pwd) {
@@ -65,10 +62,10 @@ public class Main extends JFrame{
         lbl_username.setText("User name: ");
         jpw_centre.add(lbl_username);
 
-        txt_username = new JTextField();
-        txt_username.setText("Logged in as: " + un + ", " + pwd);
-        txt_username.setEditable(false);
-        jpw_centre.add(txt_username);
+        txt_userName = new JTextField();
+        txt_userName.setText("Logged in as: " + un + ", " + pwd);
+        txt_userName.setEditable(false);
+        jpw_centre.add(txt_userName);
         jPanel_west.add(jpw_centre, "West");
 
         JPanel jpw_south = new JPanel();
@@ -92,20 +89,20 @@ public class Main extends JFrame{
         JPanel jPanel_east = new JPanel();
         jPanel_east.setLayout(new BorderLayout());
 
-        JLabel lbl_topiclist = new JLabel();
-        lbl_topiclist.setText("Topic list:");
-        jPanel_east.add(lbl_topiclist, "North");
+        JLabel lbl_topicList = new JLabel();
+        lbl_topicList.setText("Topic list:");
+        jPanel_east.add(lbl_topicList, "North");
 
-        txtAr_topiclist = new JTextArea();
-        JScrollPane jScrollPane_topicList = new JScrollPane(txtAr_topiclist);
-        txtAr_topiclist.setEditable(false);
+        txtAr_topicList = new JTextArea();
+        JScrollPane jScrollPane_topicList = new JScrollPane(txtAr_topicList);
+        txtAr_topicList.setEditable(false);
         jPanel_east.add(jScrollPane_topicList, "Center");
 
         Dimension preferredSize = base_panel.getPreferredSize();
         preferredSize.width = preferredSize.width*20;
         base_panel.setPreferredSize(preferredSize);
 
-        JPanel newpanel = new JPanel();
+        /*JPanel newpanel = new JPanel();
         newpanel.setLayout(new GridLayout(1, 2, 10, 10));
 
         txt_comment = new JTextField(16);
@@ -114,76 +111,56 @@ public class Main extends JFrame{
 
         JButton btn_comment = new JButton();
         btn_comment.setText("Post");
-        newpanel.add(btn_comment);
+        newpanel.add(btn_comment);*/
 
 
         frame.setResizable(false);
         base_panel.setPreferredSize(new Dimension(500, 200));
         base_panel.add(jPanel_west, "West");
         base_panel.add(jPanel_east, "Center");
-        base_panel.add(newpanel, "South");
+        //base_panel.add(newpanel, "South");
         frame.pack();
         frame.setVisible(true);
 
-        btn_start.addActionListener (new java.awt.event.ActionListener () {
-            public void actionPerformed (java.awt.event.ActionEvent evt) {
-                createTopic();
-            }
-        });
+        btn_start.addActionListener (evt -> createTopic());
 
-        btn_join.addActionListener (new java.awt.event.ActionListener () {
-            public void actionPerformed (java.awt.event.ActionEvent evt) {
-                joinTopic();
-            }
-        });
+        btn_join.addActionListener (evt -> joinTopic());
 
-        btn_delete.addActionListener (new java.awt.event.ActionListener () {
-            public void actionPerformed (java.awt.event.ActionEvent evt) {
-                deleteTopic(evt);
-            }
-        });
-
-        btn_comment.addActionListener (new java.awt.event.ActionListener () {
-            public void actionPerformed (java.awt.event.ActionEvent evt) {
-                okPressed();
-            }
-        });
+        btn_delete.addActionListener (evt -> deleteTopic());
     }
 
     private void createTopic(){
         // Getting a name of the topic to be created.
         topicSelected = JOptionPane.showInputDialog("Give your topic a name");
-
         if (topicSelected.equals("")){
             return;
         }
-        if (topicSelected == null ){
-            return;
-        }
-        try{
-            // Receiving Topic Nr.
-            QueueStatus template = new QueueStatus();
-            QueueStatus topicStatus = (QueueStatus) space.take(template, null, 1000);
-            topicNumber = topicStatus.nextTopic;
+        if (topicSelected.length() >= 1){
+            try{
+                // Receiving Topic Nr.
+                QueueStatus template = new QueueStatus();
+                QueueStatus topicStatus = (QueueStatus) space.take(template, null, 1000);
+                topicNumber = topicStatus.nextTopic;
 
-            // Creating / Writing a new topic to the space.
-            QueueItem newTopic = new QueueItem(topicNumber, topicSelected, username, password, getTimestamp(), "", 1, username);
-            space.write(newTopic, null, Lease.FOREVER);
+                // Creating / Writing a new topic to the space.
+                QueueItem newTopic = new QueueItem(topicNumber, topicSelected, userName, password, getTimestamp(), "", 1, userName);
+                space.write(newTopic, null, Lease.FOREVER);
 
 
-            TopicList listTemplate = new TopicList(topicNumber, topicSelected, username, 1);
-            space.write(listTemplate, null, Lease.FOREVER);
+                TopicList listTemplate = new TopicList(topicNumber, topicSelected, userName, 1);
+                space.write(listTemplate, null, Lease.FOREVER);
 
-            // Incrementing Topic Nr.
-            topicStatus.incrementTopicNr();
-            space.write(topicStatus, null, Lease.FOREVER);
+                // Incrementing Topic Nr.
+                topicStatus.incrementTopicNr();
+                space.write(topicStatus, null, Lease.FOREVER);
 
-            //Calling Topic room GUI.
-            new TopicRoom2(topicNumber, topicSelected, username, password, getTimestamp(), "", username);
+                //Calling Topic room GUI.
+                new TopicRoom2(topicNumber, topicSelected, userName, password, getTimestamp(), "", userName);
 
-            // Adding newly created topic to the existing list.
-        }catch(Exception e){
-            e.printStackTrace();
+                // Adding newly created topic to the existing list.
+            }catch(Exception e){
+                e.printStackTrace();
+            }
         }
     }
 
@@ -210,87 +187,23 @@ public class Main extends JFrame{
                 topicOwner = topicToTake._topicOwner;
                 int commentNr = topicToTake._commentNr;
 
-                QueueItem joinThis = new QueueItem(topicNr, topicName, username, password, getTimestamp(), "", commentNr, topicOwner);
+                QueueItem joinThis = new QueueItem(topicNr, topicName, userName, password, getTimestamp(), "", commentNr, topicOwner);
                 space.write(joinThis, null, Lease.FOREVER);
 
                 space.write(topicToTake, null, Lease.FOREVER);
 
-                new TopicRoom2(topicNr, topicName, username, password, getTimestamp(), "", topicOwner);
+                new TopicRoom2(topicNr, topicName, userName, password, getTimestamp(), "", topicOwner);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
-
-        private void okPressed(){
-          /*  try{
-                QueueItem temp = new QueueItem();
-                String tn = temp._topicName;
-                String to = temp._topicOwner;
-
-                String comment = txt_comment.getText();
-                if (!comment.equals("")){
-                    QueueItem newTopic = new QueueItem(topicNumber, topicName, username, password, Main.getTimestamp(), comment, topicOwner);
-                    space.write(newTopic, null, Lease.FOREVER);
-                    txt_comment.setText("");
-                }
-            }catch(Exception e){
-                e.printStackTrace();
-            }*/
-        }
-
-
-        /*
-        try{
-            QueueItem qiTemplate = new QueueItem();
-            qiTemplate._topicName = topicSelected;  // THIS IS THE MAIN CHANGE.  Set the destination printer name in the template so as to retrieve only the correct print jobs
-            QueueItem nextJob = (QueueItem) space.readIfExists(qiTemplate,null, 2000);
-
-            TopicList template = new TopicList();
-            template._id = Integer.parseInt(topicSelected);
-            if (nextJob == null) {
-                JOptionPane.showMessageDialog(null, "This topic does not exist.", "Name Error!", JOptionPane.ERROR_MESSAGE);
-            } else {
-                System.out.println("Topic received");
-                owner = nextJob._topicOwner;
-            }
-
-            QueueStatus template = new QueueStatus();
-            QueueStatus topicStatus = (QueueStatus) space.take(template, null, 2000);
-            topicNumber = topicStatus.nextTopic;
-
-            String timestamp = getTimestamp();
-            String comment = txt_comment.getText();
-
-            QueueItem newTopic = new QueueItem(topicNumber, topicSelected, username, password, timestamp, comment, owner);
-            space.write(newTopic, null, Lease.FOREVER);
-
-            topicStatus.incrementTopicNr();
-            space.write(topicStatus, null, Lease.FOREVER);
-        }catch(Exception e){
-            e.printStackTrace();
-        }*/
-
-    private void deleteTopic(ActionEvent event){
+    private void deleteTopic(){
         topicSelected = JOptionPane.showInputDialog("Select a Topic to Delete");
     }
 
-    private void appendToTextArea(){
-        if (topicSelected != null){
-            String appendix = topicNumber + ". " + topicSelected + ", " + "\n";
-            ArrayList<String> topics = new ArrayList<>();
-            if (!topics.contains(appendix)){
-                topics.add(appendix);
-                for (String topic : topics){
-                    txtAr_topiclist.append(topic);
-                }
-
-            }
-        }
-    }
-
-    public static String getTimestamp(){
+    static String getTimestamp(){
         SimpleDateFormat sdf = new SimpleDateFormat("HH.mm.ss");
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
         return sdf.format(timestamp)+"";
