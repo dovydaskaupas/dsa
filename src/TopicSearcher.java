@@ -6,7 +6,7 @@ import java.util.TimerTask;
 
 /**
  * A helper class, that is being called (from Main class, by Timer.scheduler) every X second/s,
- * to check if any TopicList objects been added to the space. If so, they are printed to the
+ * to check if any TopicItem objects been added to the space. If so, they are printed to the
  * accessible topic list.
  */
 public class TopicSearcher extends TimerTask {
@@ -29,7 +29,7 @@ public class TopicSearcher extends TimerTask {
     }
 
     /**
-     * Method that reads all TopicList objects from the space, adds them to the array list, and shows as the Topic List to the user.
+     * Method that reads all TopicItem objects from the space, adds them to the array list, and shows as the Topic List to the user.
      * @param txtAr - text area to post topics on.
      */
     private void searchForTopics(JTextArea txtAr){
@@ -42,10 +42,10 @@ public class TopicSearcher extends TimerTask {
         ArrayList<String> topics = new ArrayList<>();
 
         try{
-            TopicList template = new TopicList();
+            TopicItem template = new TopicItem();
             for(int i = 1; i < 15; i++){
                 template._id = i;
-                TopicList topicsOnline = (TopicList) space.readIfExists(template, null, 1000);
+                TopicItem topicsOnline = (TopicItem) space.readIfExists(template, null, 1000);
                 if(topicsOnline != null){
                     int topicNr = topicsOnline._id;
                     String topicName = topicsOnline._topicName;

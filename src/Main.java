@@ -9,6 +9,10 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Timer;
 
+/**
+ * This class serves as the main menu, allowing to Create, Join, Delete topics
+ * and displays existing Topic List on the screen.
+ */
 public class Main extends JFrame{
 
     private JTextArea txtAr_topicList;
@@ -84,7 +88,6 @@ public class Main extends JFrame{
         jpw_south.add(btn_delete);
         jPanel_west.add(jpw_south, "South");
 
-
         // East panel.
         JPanel jPanel_east = new JPanel();
         jPanel_east.setLayout(new BorderLayout());
@@ -102,23 +105,10 @@ public class Main extends JFrame{
         preferredSize.width = preferredSize.width*20;
         base_panel.setPreferredSize(preferredSize);
 
-        /*JPanel newpanel = new JPanel();
-        newpanel.setLayout(new GridLayout(1, 2, 10, 10));
-
-        txt_comment = new JTextField(16);
-        txt_comment.setText("");
-        newpanel.add(txt_comment);
-
-        JButton btn_comment = new JButton();
-        btn_comment.setText("Post");
-        newpanel.add(btn_comment);*/
-
-
         frame.setResizable(false);
         base_panel.setPreferredSize(new Dimension(500, 200));
         base_panel.add(jPanel_west, "West");
         base_panel.add(jPanel_east, "Center");
-        //base_panel.add(newpanel, "South");
         frame.pack();
         frame.setVisible(true);
 
@@ -129,6 +119,11 @@ public class Main extends JFrame{
         btn_delete.addActionListener (evt -> deleteTopic());
     }
 
+    /**
+     * Responsible for creating new topics. New topic creates new TopicItem object,
+     * that stores topic id, name, comment number and owner's name. Comment number is incremented each time
+     * someone posts a comment. It allows displaying comments for each topic correctly.
+     */
     private void createTopic(){
         // Getting a name of the topic to be created.
         topicSelected = JOptionPane.showInputDialog("Give your topic a name");
@@ -143,43 +138,47 @@ public class Main extends JFrame{
                 topicNumber = topicStatus.nextTopic;
 
                 // Creating / Writing a new topic to the space.
-                QueueItem newTopic = new QueueItem(topicNumber, topicSelected, userName, password, getTimestamp(), "", 1, userName);
+                QueueItem newTopic = new QueueItem(topicNumber, topicSelected, userName, password, getTimestamp(), "", 1, userName, userName, "");
                 space.write(newTopic, null, Lease.FOREVER);
 
-
-                TopicList listTemplate = new TopicList(topicNumber, topicSelected, userName, 1);
+                // Creating new Topic Item.
+                TopicItem listTemplate = new TopicItem(topicNumber, topicSelected, userName, 1);
                 space.write(listTemplate, null, Lease.FOREVER);
 
-                // Incrementing Topic Nr.
+                // Incrementing Topic Nr and writing it to the space.
                 topicStatus.incrementTopicNr();
                 space.write(topicStatus, null, Lease.FOREVER);
 
                 //Calling Topic room GUI.
-                new TopicRoom2(topicNumber, topicSelected, userName, password, getTimestamp(), "", userName);
-
-                // Adding newly created topic to the existing list.
+                new TopicRoom(topicNumber, topicSelected, userName, password, userName);
             }catch(Exception e){
                 e.printStackTrace();
             }
         }
     }
 
+    /**
+     * Responsible for Join Topic functionality. Uses values returned by Topic Item object
+     * for joining topics correctly.
+     */
     private void joinTopic() {
         topicSelected = "";
         topicSelected = JOptionPane.showInputDialog("Type in the TOPIC NUMBER to Join");
         if (!topicSelected.equals("")){
-            int inputReceived = 0;
+            int inputReceived;
+
             try {
                 inputReceived = Integer.parseInt(topicSelected);
             } catch (NumberFormatException e) {
                 JOptionPane.showMessageDialog(null, "Input must be a number!");
+                return;
             }
 
             try {
-                TopicList template = new TopicList();
+                TopicItem template = new TopicItem();
                 template._id = inputReceived;
 
-                TopicList topicToTake = (TopicList) space.take(template, null, 900);
+                TopicItem topicToTake = (TopicItem) space.take(template, null, 900);
                 topicToTake.incrementCommentNr();
 
                 int topicNr = topicToTake._id;
@@ -187,22 +186,29 @@ public class Main extends JFrame{
                 topicOwner = topicToTake._topicOwner;
                 int commentNr = topicToTake._commentNr;
 
-                QueueItem joinThis = new QueueItem(topicNr, topicName, userName, password, getTimestamp(), "", commentNr, topicOwner);
+                QueueItem joinThis = new QueueItem(topicNr, topicName, userName, password, getTimestamp(), "", commentNr, topicOwner, userName, "");
                 space.write(joinThis, null, Lease.FOREVER);
 
                 space.write(topicToTake, null, Lease.FOREVER);
 
-                new TopicRoom2(topicNr, topicName, userName, password, getTimestamp(), "", topicOwner);
+                new TopicRoom(topicNr, topicName, userName, password, topicOwner);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
+    /**
+     * -
+     */
     private void deleteTopic(){
         topicSelected = JOptionPane.showInputDialog("Select a Topic to Delete");
     }
 
+    /**
+     * Gets current time in format - HH.mm.ss.
+     * @return - current time.
+     */
     static String getTimestamp(){
         SimpleDateFormat sdf = new SimpleDateFormat("HH.mm.ss");
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
@@ -212,5 +218,4 @@ public class Main extends JFrame{
     public static void main(String[] args){
         new Main();
     }
-
 }

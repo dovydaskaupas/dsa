@@ -1,15 +1,17 @@
 import net.jini.core.lease.Lease;
 import net.jini.space.JavaSpace;
-
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 import java.util.Timer;
 
-public class TopicRoom2 extends JFrame {
+/**
+ * Class that is responsible for implementing interface for TopicRoom,
+ * and posting new comments.
+ */
+public class TopicRoom extends JFrame {
 
     private static String topicName, userName, password, ownerName;
     private static int topicNumber;
@@ -17,8 +19,9 @@ public class TopicRoom2 extends JFrame {
     private static JTextArea txtAr_chatArea;
     private static JLabel lbl_topicName;
     private JTextField txt_comment;
+    private JCheckBox cb_privateMessaging;
 
-    TopicRoom2(int topicNr, String topic, String userN, String pwd, String timeS, String comm, String ownerN){
+    TopicRoom(int topicNr, String topic, String userN, String pwd, String ownerN){
         space = SpaceUtils.getSpace();
         if (space == null){
             System.err.println("Failed to find the Java Space");
@@ -30,8 +33,6 @@ public class TopicRoom2 extends JFrame {
         topicName = topic;
         userName = userN;
         password = pwd;
-        // timeStamp = timeS; // redundant!?
-        // comment = comm; // redundant!?
         ownerName = ownerN;
 
         // Runs Helpers.CommentPublisher class every X seconds to update the Topic room's text_area.
@@ -88,7 +89,7 @@ public class TopicRoom2 extends JFrame {
         lbl_private.setText("Set Private:");
         jPanel_south.add(lbl_private);
 
-        JCheckBox cb_privateMessaging = new JCheckBox();
+        cb_privateMessaging = new JCheckBox();
         cb_privateMessaging.setSelected(false);
         jPanel_south.add(cb_privateMessaging);
 
@@ -101,30 +102,35 @@ public class TopicRoom2 extends JFrame {
         frame.pack();
         frame.setVisible(true);
 
-        btn_post.addActionListener (new java.awt.event.ActionListener () {
-            public void actionPerformed (java.awt.event.ActionEvent evt) {
-                postComment(evt);
-            }
-        });
+        btn_post.addActionListener (evt -> postComment());
     }
 
-    private void postComment(ActionEvent event){
+    /**
+     * Method responsible for posting new comments. Also it determines whether comment is private or public,
+     * and increments each comment number to make tracking comments easy.
+     */
+    private void postComment(){
+        String isPrivate;
         try{
+            if (cb_privateMessaging.isSelected()){
+                isPrivate = "yes";
+            }else{
+                isPrivate = "no";
+            }
 
             String comment = txt_comment.getText();
 
             if (!comment.equals("")){
-
-                // Takes the TopicList object from the space by its id, then increments its comment number and passes it to the QueueItem object.
+                // Takes the TopicItem object from the space by its id, then increments its comment number and passes it to the QueueItem object.
                 // This helps to track individual comments.
-                TopicList topicList = new TopicList();
+                TopicItem topicList = new TopicItem();
                 topicList._id = topicNumber;
-                TopicList result = (TopicList) space.take(topicList, null, 500);
+                TopicItem result = (TopicItem) space.take(topicList, null, 500);
 
                 result.incrementCommentNr();
                 int commentNr = result._commentNr;
 
-                QueueItem newTopic = new QueueItem(topicNumber, topicName, userName, password, Main.getTimestamp(), comment, commentNr, ownerName);
+                QueueItem newTopic = new QueueItem(topicNumber, topicName, userName, password, Main.getTimestamp(), comment, commentNr, ownerName, userName, isPrivate);
                 space.write(newTopic, null, Lease.FOREVER);
 
                 space.write(result, null, Lease.FOREVER);

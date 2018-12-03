@@ -38,7 +38,7 @@ public class CommentPublisher extends TimerTask {
     }
 
     /**
-     * When called, reads the space for comments and adds all to the ArrayList.
+     * Reads the space for comments and adds them all to the ArrayList.
      * Every item from the ArrayList is appended to the textArea.
      */
     private void checkSpace(){
@@ -46,9 +46,9 @@ public class CommentPublisher extends TimerTask {
         String comment;
 
         try {
-            TopicList tl = new TopicList();
+            TopicItem tl = new TopicItem();
             tl._topicName = topicSelected;
-            TopicList result = (TopicList) space.read(tl,null, 500);
+            TopicItem result = (TopicItem) space.read(tl,null, 500);
 
             int topicNumber = result._id;
             String topicOwner = result._topicOwner;
@@ -63,24 +63,37 @@ public class CommentPublisher extends TimerTask {
                 String userName = queueItem._userName;
                 String ts = queueItem._timestamp;
                 String comm = queueItem._comment;
-                int commentNumber = queueItem._commentNr;
+                String commentOwner = queueItem._commentOwner;
+                String isPrivate = queueItem._isPrivate;
 
+                // Toolbar label.
                 lable.setText("Topic Owner: "  + topicOwner + "  |  Topic Name: " + topicNumber+ "." + topicSelected + "  |  " + "Logged as: " + loggedAs);
 
+                // Determine the form and state of comment.
                 if (!comm.equals("")){
-                    comment = "->" + ts + ", " + userName + " says: " + comm + commentNumber + "\n";
+                    if(isPrivate.equals("yes")){
+                        if(loggedAs.equals(topicOwner) || loggedAs.equals(commentOwner)){
+                            comment = "->" + ts + ", " + userName + " says: " + comm + "\n";
+                        }else{
+                            comment = "->" + ts + ", message is hidden." +"\n";
+                        }
+                    }else{
+                        comment = "->" + ts + ", " + userName + " says: " + comm + "\n";
+                    }
                 }else{
                     if(comments.size() != 0){
-                        comment = "->" + ts + ", " + userName + " joined the topic room." + commentNumber + "\n";
+                        comment = "->" + ts + ", " + userName + " joined the topic room." + "\n";
                     }else{
-                        comment = "->" + ts + ", " + userName + " created the topic room." + commentNumber + "\n";
+                        comment = "->" + ts + ", " + userName + " created the topic room." + "\n";
                     }
                 }
 
+                // Adds comment to the array if yet it does not exist there.
                 if (!comments.contains(comment)){
                     comments.add(comment);
                 }
 
+                // Every comment from the array is appended on the JTextArea.
                 txtArea.setText("");
                 for (String com : comments){
                     txtArea.append(com);

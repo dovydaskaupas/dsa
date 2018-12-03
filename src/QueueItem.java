@@ -9,11 +9,13 @@ public class QueueItem implements Entry {
     public String _comment;
     public Integer _commentNr;
     public String _topicOwner;
+    public String _commentOwner;
+    public String _isPrivate;
 
     public QueueItem(){
     }
 
-    public QueueItem(int topicNumber, String topicName, String userName, String password, String timestamp, String comment, int commentNr, String topicOwner){
+    public QueueItem(int topicNumber, String topicName, String userName, String password, String timestamp, String comment, int commentNr, String topicOwner, String commentOwner, String isPrivate){
         _topicNumber = topicNumber;
         _topicName = topicName;
         _userName = userName;
@@ -22,5 +24,7 @@ public class QueueItem implements Entry {
         _comment = comment;
         _commentNr = commentNr;
         _topicOwner = topicOwner;
+        _commentOwner = commentOwner;
+        _isPrivate = isPrivate;
     }
 }
