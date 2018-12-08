@@ -48,7 +48,16 @@ public class CommentPublisher extends TimerTask {
         try {
             TopicItem tl = new TopicItem();
             tl._topicName = topicSelected;
+
+            if (topicSelected == null){
+                return;
+            }
+
             TopicItem result = (TopicItem) space.read(tl,null, 500);
+
+            if (result == null){
+                return;
+            }
 
             int topicNumber = result._id;
             String topicOwner = result._topicOwner;

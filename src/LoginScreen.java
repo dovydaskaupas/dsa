@@ -113,6 +113,14 @@ public class LoginScreen extends JFrame {
     }
 
     private void login(){
+        if(txt_username.getText().length() < 3){
+            JOptionPane.showMessageDialog(null, "Username cannot be shorter than 3 symbols.", "Login Error!", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if(txt_password.getText().length() <3 ){
+            JOptionPane.showMessageDialog(null, "Password cannot be shorter than 3 symbols.", "Login Error!", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         new Main();
         frame.setVisible(false);
     }

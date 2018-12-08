@@ -11,4 +11,6 @@ public class QueueStatus implements Entry {
     }
 
     public void incrementTopicNr(){ nextTopic ++; }
+
+    public void decrementTopicNr() {nextTopic --;}
 }

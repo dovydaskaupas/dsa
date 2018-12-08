@@ -22,7 +22,7 @@ public class Main extends JFrame{
     private int topicNumber;
 
     private JavaSpace space;
-    
+
     Main(){
         space = SpaceUtils.getSpace();
         if (space == null){
@@ -61,6 +61,7 @@ public class Main extends JFrame{
 
         JPanel jpw_centre = new JPanel();
         jpw_centre.setLayout(new FlowLayout());
+        //jpw_centre.setLayout(new GridLayout(4, 0, 10, 10));
 
         JLabel lbl_username = new JLabel();
         lbl_username.setText("User name: ");
@@ -70,6 +71,7 @@ public class Main extends JFrame{
         txt_userName.setText("Logged in as: " + un + ", " + pwd);
         txt_userName.setEditable(false);
         jpw_centre.add(txt_userName);
+
         jPanel_west.add(jpw_centre, "West");
 
         JPanel jpw_south = new JPanel();
@@ -102,7 +104,7 @@ public class Main extends JFrame{
         jPanel_east.add(jScrollPane_topicList, "Center");
 
         Dimension preferredSize = base_panel.getPreferredSize();
-        preferredSize.width = preferredSize.width*20;
+        preferredSize.width = preferredSize.width * 20;
         base_panel.setPreferredSize(preferredSize);
 
         frame.setResizable(false);
@@ -127,7 +129,7 @@ public class Main extends JFrame{
     private void createTopic(){
         // Getting a name of the topic to be created.
         topicSelected = JOptionPane.showInputDialog("Give your topic a name");
-        if (topicSelected.equals("")){
+        if (topicSelected == null){
             return;
         }
         if (topicSelected.length() >= 1){
@@ -158,13 +160,14 @@ public class Main extends JFrame{
     }
 
     /**
-     * Responsible for Join Topic functionality. Uses values returned by Topic Item object
-     * for joining topics correctly.
+     * Responsible for Join Topic functionality. Uses values returned by TopicItem object
+     * in order to joining topics correctly.
      */
     private void joinTopic() {
         topicSelected = "";
         topicSelected = JOptionPane.showInputDialog("Type in the TOPIC NUMBER to Join");
-        if (!topicSelected.equals("")){
+        if (topicSelected != null){
+            if(topicSelected.length() < 1){ return; }
             int inputReceived;
 
             try {
@@ -193,16 +196,67 @@ public class Main extends JFrame{
 
                 new TopicRoom(topicNr, topicName, userName, password, topicOwner);
             } catch (Exception e) {
-                e.printStackTrace();
+                JOptionPane.showMessageDialog(null, "Topic does not exist");
             }
         }
     }
 
     /**
-     * -
+     * Takes objects from the space.
      */
     private void deleteTopic(){
-        topicSelected = JOptionPane.showInputDialog("Select a Topic to Delete");
+        int inputReceived;
+
+        // 1. Getting an id of a topic to delete.
+        topicSelected = "";
+        topicSelected = JOptionPane.showInputDialog("Type in the TOPIC NUMBER to Delete it");
+        if (topicSelected != null){
+            if(topicSelected.length() < 1){ return; }
+            try {
+                inputReceived = Integer.parseInt(topicSelected);
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(null, "Input must be a number!");
+                return;
+            }
+
+            // 2. Getting the number of topics that exist on the space.
+            try {
+                QueueItem temp = new QueueItem();
+                temp._topicNumber = inputReceived;
+                QueueItem retQI = (QueueItem) space.readIfExists(temp,null, 500);
+                String retPwd = retQI._password;
+                String retOwner = retQI._topicOwner;
+
+                if(retPwd.equals(password) & retOwner.equals(userName)){
+                    // 3. Taking objects from the space
+                    try{
+                        QueueStatus qsTemp = new QueueStatus();
+                        qsTemp.nextTopic = inputReceived;
+                        space.take(qsTemp, null, 500);
+
+                        TopicItem tiTemp = new TopicItem();
+                        tiTemp._id = inputReceived;
+                        TopicItem removeTI = (TopicItem) space.take(tiTemp, null, 500);
+
+                        int commentAmount = removeTI._commentNr;
+                        String topicName = removeTI._topicName;
+
+                        for(int i = 1; i < commentAmount + 1; i++) {
+                            QueueItem qiTemp = new QueueItem();
+                            qiTemp._topicName = topicName;
+                            qiTemp._commentNr = i;
+                            space.take(qiTemp, null, 500);
+                        }
+                    }catch(Exception e){
+                        JOptionPane.showMessageDialog(null, "Topic does not exist");
+                    }
+                }else{
+                    JOptionPane.showMessageDialog(null, "You can only delete your own topics.");
+                }
+            }catch(Exception e){
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
