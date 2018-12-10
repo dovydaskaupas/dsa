@@ -1,5 +1,6 @@
 import net.jini.core.lease.Lease;
 import net.jini.space.JavaSpace;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
@@ -71,7 +72,7 @@ public class TopicRoom extends JFrame {
 
         // Panel SOUTH
         JPanel jPanel_south = new JPanel();
-        jPanel_south.setLayout(new GridLayout(1, 5, 10, 10));
+        jPanel_south.setLayout(new GridLayout(2, 3, 10, 10));
 
         JLabel lbl_comment = new JLabel();
         lbl_comment.setText("Write a comment here:");

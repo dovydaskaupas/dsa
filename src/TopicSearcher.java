@@ -13,11 +13,10 @@ import java.util.TimerTask;
  * accessible topic list.
  */
 public class TopicSearcher extends TimerTask {
-    private JavaSpace space;
     private JTextArea textArea;
 
     TopicSearcher(JTextArea textAr){
-        space = SpaceUtils.getSpace();
+        JavaSpace space = SpaceUtils.getSpace();
         if (space == null){
             System.err.println("Failed to find the JavaSpace");
             System.exit(1);
@@ -47,6 +46,7 @@ public class TopicSearcher extends TimerTask {
             System.exit(1);
         }
 
+        // Creating a collection to store a wild cards of TopicItem. Every topic has it's own TopicItem.
         Collection<TopicItem> templates = new ArrayList<>();
 
         TopicItem template = new TopicItem();
@@ -57,7 +57,6 @@ public class TopicSearcher extends TimerTask {
             // Looping while true. Value becomes false when 'result' returned = null.
             boolean isItem = true;
             while(isItem){
-                //for(int i = 0; i < 3; i ++){
                 TopicItem topicsOnline = (TopicItem) results.next();
                 if(topicsOnline != null){
                     int topicNr = topicsOnline._id;

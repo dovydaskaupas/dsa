@@ -22,14 +22,14 @@ public class StartTopicQueue {
                     QueueStatus qs = new QueueStatus(1);
                     space.write(qs, null, Lease.FOREVER);
                     System.out.println("QueueStatus object added to space");
-                    System.exit(0);
+                    //System.exit(0);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             } else {
                 // there is already an object available, so don't create one
                 System.out.println("QueueStatus object is already in the space");
-                System.exit(1);
+                //System.exit(1);
             }
 
         } catch (Exception e) {

@@ -1,9 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
 
 public class LoginScreen extends JFrame {
 
@@ -44,6 +41,7 @@ public class LoginScreen extends JFrame {
         jPanel_center.add(lbl_username);
 
         txt_username = new JTextField();
+        txt_username.setFocusable(true);
         txt_username.setText("");
         txt_username.addKeyListener(new KeyAdapter() {
             public void keyTyped(KeyEvent e) {
@@ -113,7 +111,7 @@ public class LoginScreen extends JFrame {
     }
 
     private void login(){
-        if(txt_username.getText().length() < 3){
+        if(txt_username.getText().length() <3 ){
             JOptionPane.showMessageDialog(null, "Username cannot be shorter than 3 symbols.", "Login Error!", JOptionPane.ERROR_MESSAGE);
             return;
         }
