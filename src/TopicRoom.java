@@ -1,4 +1,7 @@
 import net.jini.core.lease.Lease;
+import net.jini.core.transaction.CannotAbortException;
+import net.jini.core.transaction.Transaction;
+import net.jini.core.transaction.UnknownTransactionException;
 import net.jini.space.JavaSpace;
 
 import javax.swing.*;
@@ -6,6 +9,7 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
+import java.rmi.RemoteException;
 import java.util.Timer;
 
 /**
@@ -18,7 +22,7 @@ public class TopicRoom extends JFrame {
     private static int topicNumber;
     private JavaSpace space;
     private static JTextArea txtAr_chatArea;
-    private static JLabel lbl_topicName;
+    private static JLabel lbl_topicName, lbl_userName;
     private JTextField txt_comment;
     private JCheckBox cb_privateMessaging;
 
@@ -38,7 +42,7 @@ public class TopicRoom extends JFrame {
 
         // Runs Helpers.CommentPublisher class every X seconds to update the Topic room's text_area.
         Timer timer = new Timer();
-        timer.schedule(new CommentPublisher(topicName, txtAr_chatArea, lbl_topicName, userName), 0, 2000);
+        timer.schedule(new CommentPublisher(topicName, txtAr_chatArea, lbl_topicName, lbl_userName, userName), 0, 2000);
     }
 
     private void initInterface(){
@@ -56,10 +60,13 @@ public class TopicRoom extends JFrame {
 
         // Panel NORTH
         JPanel jPanel_north = new JPanel();
-        jPanel_north.setLayout(new FlowLayout());
+        jPanel_north.setLayout(new GridLayout(2, 1));
 
         lbl_topicName = new JLabel();
         jPanel_north.add(lbl_topicName);
+
+        lbl_userName = new JLabel();
+        jPanel_north.add(lbl_userName);
 
         // Panel CENTRE
         JPanel jPanel_centre = new JPanel();
@@ -112,6 +119,7 @@ public class TopicRoom extends JFrame {
      */
     private void postComment(){
         String isPrivate;
+        Transaction trcComment = Main.getTransactionCreated(800).transaction;
         try{
             if (cb_privateMessaging.isSelected()){
                 isPrivate = "yes";
@@ -120,25 +128,41 @@ public class TopicRoom extends JFrame {
             }
 
             String comment = txt_comment.getText();
-
             if (!comment.equals("")){
                 // Takes the TopicItem object from the space by its id, then increments its comment number and passes it to the QueueItem object.
                 // This helps to track individual comments.
                 TopicItem topicList = new TopicItem();
                 topicList._id = topicNumber;
-                TopicItem result = (TopicItem) space.take(topicList, null, 500);
+                TopicItem result = (TopicItem) space.take(topicList, trcComment, 500);
 
                 result.incrementCommentNr();
                 int commentNr = result._commentNr;
 
-                QueueItem newTopic = new QueueItem(topicNumber, topicName, userName, password, Main.getTimestamp(), comment, commentNr, ownerName, userName, isPrivate);
-                space.write(newTopic, null, Lease.FOREVER);
+                System.out.println("Topic nr: " + topicNumber);
+                System.out.println("topic name: " + topicName);
+                System.out.println("user nam: " + userName);
+                System.out.println("pwd: " + password);
+                System.out.println("comment" + comment);
+                System.out.println("comnr: " + commentNr);
+                System.out.println("ownr nm: " + ownerName);
+                System.out.println("comment owner: " + userName);
 
-                space.write(result, null, Lease.FOREVER);
+
+                QueueItem newTopic = new QueueItem(topicNumber, topicName, userName, password, Main.getTimestamp(), comment, commentNr, ownerName, userName, isPrivate);
+                space.write(newTopic, trcComment, Lease.FOREVER);
+
+                space.write(result, trcComment, Lease.FOREVER);
                 txt_comment.setText("");
+                trcComment.commit();
             }
         }catch(Exception e){
             e.printStackTrace();
+            try {
+                trcComment.abort();
+            } catch (UnknownTransactionException | CannotAbortException | RemoteException e1) {
+                JOptionPane.showMessageDialog(null, "Problem occurred while posting comment!", null, JOptionPane.ERROR_MESSAGE);
+                e1.printStackTrace();
+            }
         }
     }
     public static void main(String[] args){}

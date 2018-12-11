@@ -52,7 +52,6 @@ public class LoginScreen extends JFrame {
                 } else if (Character.isDigit(c)) {
                     hasDigit = true;
                 } else {
-                    //JOptionPane.showMessageDialog(null, "This symbol cannot be used for username.", "Symbol Error!", JOptionPane.ERROR_MESSAGE);
                     e.consume();
                 }
 
@@ -79,7 +78,6 @@ public class LoginScreen extends JFrame {
                 } else if (Character.isDigit(c)) {
                     hasDigit = true;
                 } else {
-                    //JOptionPane.showMessageDialog(null, "This symbol cannot be used for password.", "Symbol Error!", JOptionPane.ERROR_MESSAGE);
                     e.consume();
                 }
 
@@ -119,6 +117,7 @@ public class LoginScreen extends JFrame {
             JOptionPane.showMessageDialog(null, "Password cannot be shorter than 3 symbols.", "Login Error!", JOptionPane.ERROR_MESSAGE);
             return;
         }
+        new StartTopicQueue();
         new Main();
         frame.setVisible(false);
     }

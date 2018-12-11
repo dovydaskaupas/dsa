@@ -1,6 +1,6 @@
 import net.jini.core.entry.Entry;
 
-public class QueueStatus implements Entry {
+public  class QueueStatus implements Entry {
     public Integer nextTopic;
 
     public QueueStatus(){
@@ -11,6 +11,4 @@ public class QueueStatus implements Entry {
     }
 
     public void incrementTopicNr(){ nextTopic ++; }
-
-    public void decrementTopicNr() {nextTopic --;}
 }

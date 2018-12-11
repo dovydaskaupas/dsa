@@ -1,10 +1,12 @@
+import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.event.EventRegistration;
 import net.jini.core.event.RemoteEvent;
 import net.jini.core.event.RemoteEventListener;
 import net.jini.core.lease.Lease;
 import net.jini.core.lease.LeaseMap;
 import net.jini.core.lease.LeaseMapException;
-import net.jini.core.transaction.TransactionException;
+import net.jini.core.transaction.*;
+import net.jini.core.transaction.server.TransactionManager;
 import net.jini.export.Exporter;
 import net.jini.jeri.BasicILFactory;
 import net.jini.jeri.BasicJeriExporter;
@@ -33,9 +35,8 @@ public class Main extends JFrame implements RemoteEventListener {
     private JTextField txt_notification;
     private JButton btn_notify;
 
-    private String userName, password, topicSelected, topicName, topicOwner;
-    private int topicNumber;
-    private boolean isCheckingNotif = false;
+    private String userName, password, topicSelected;
+    private boolean isNotifying = false;
 
     private final static String NEW_C = "newComm";
     private final static String DEL_C = "delComm";
@@ -87,7 +88,7 @@ public class Main extends JFrame implements RemoteEventListener {
     private void initInterface(String un, String pwd) {
         JFrame frame = new JFrame("Bulletin Board");
 
-        addWindowFocusListener(new WindowAdapter() { // Check what this does.
+        addWindowFocusListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
                 System.exit(0);
@@ -123,7 +124,7 @@ public class Main extends JFrame implements RemoteEventListener {
         jpw_south.setLayout(new FlowLayout());
 
         JButton btn_start = new JButton();
-        btn_start.setText("Start");
+        btn_start.setText("Create");
         jpw_south.add(btn_start);
 
         JButton btn_join = new JButton();
@@ -175,7 +176,6 @@ public class Main extends JFrame implements RemoteEventListener {
         frame.pack();
         frame.setVisible(true);
 
-
         btn_start.addActionListener (evt -> createTopic());
 
         btn_join.addActionListener (evt -> joinTopic());
@@ -197,28 +197,43 @@ public class Main extends JFrame implements RemoteEventListener {
             return;
         }
         if (topicSelected.length() >= 1){
+
+            if (topicSelected.length() > 21){
+                JOptionPane.showMessageDialog(null, "Topic name can only be 21 symbols long.", null, JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Creating a transaction for QueueStatus take/write, QueueItem and TopicItem write operations.
+            Transaction trcCreate = getTransactionCreated(1000).transaction;
             try{
                 // Receiving Topic Nr.
                 QueueStatus template = new QueueStatus();
-                QueueStatus topicStatus = (QueueStatus) space.take(template, null, 1000);
-                topicNumber = topicStatus.nextTopic;
+                QueueStatus topicStatus = (QueueStatus) space.take(template, trcCreate, 800);
+                int topicNumber = topicStatus.nextTopic;
 
-                // Creating / Writing a new topic to the space.
+                // Creating / Writing a new QueueItem to the space with values: id, topicName, userName, password, time, comment, commentNr, topicOwner, commentOwner, isMessagePrivate.
                 QueueItem newTopic = new QueueItem(topicNumber, topicSelected, userName, password, getTimestamp(), "", 1, userName, userName, "");
-                space.write(newTopic, null, Lease.FOREVER);
+                space.write(newTopic, trcCreate, Lease.FOREVER);
 
-                // Creating new Topic Item.
+                // Creating a new TopicItem, with values: topicID, topicName, topicOwner, totalNumberOfComments.
                 TopicItem listTemplate = new TopicItem(topicNumber, topicSelected, userName, 1);
-                space.write(listTemplate, null, Lease.FOREVER);
+                space.write(listTemplate, trcCreate, Lease.FOREVER);
 
                 // Incrementing Topic Nr and writing it to the space.
                 topicStatus.incrementTopicNr();
-                space.write(topicStatus, null, Lease.FOREVER);
+                space.write(topicStatus, trcCreate, Lease.FOREVER);
 
                 //Calling Topic room GUI.
                 new TopicRoom(topicNumber, topicSelected, userName, password, userName);
+                trcCreate.commit();
             }catch(Exception e){
                 e.printStackTrace();
+                try {
+                    trcCreate.abort();
+                } catch (UnknownTransactionException | CannotAbortException | RemoteException e1) {
+                    JOptionPane.showMessageDialog(null, "Error creating topic", null, JOptionPane.ERROR_MESSAGE);
+                    e1.printStackTrace();
+                }
             }
         }
     }
@@ -237,30 +252,38 @@ public class Main extends JFrame implements RemoteEventListener {
             try {
                 inputReceived = Integer.parseInt(topicSelected);
             } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(null, "Input must be a number!");
+                JOptionPane.showMessageDialog(null, "Input must be a number!", null, JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
+            // Transaction for TopicItem take/write, and QueueItem write operations.
+            Transaction trcJoin = getTransactionCreated(800).transaction;
             try {
                 TopicItem template = new TopicItem();
                 template._id = inputReceived;
 
-                TopicItem topicToTake = (TopicItem) space.take(template, null, 900);
+                TopicItem topicToTake = (TopicItem) space.take(template, null, 500);
                 topicToTake.incrementCommentNr();
 
                 int topicNr = topicToTake._id;
-                topicName = topicToTake._topicName;
-                topicOwner = topicToTake._topicOwner;
+                String topicName = topicToTake._topicName;
+                String topicOwner = topicToTake._topicOwner;
                 int commentNr = topicToTake._commentNr;
 
                 QueueItem joinThis = new QueueItem(topicNr, topicName, userName, password, getTimestamp(), "", commentNr, topicOwner, userName, "");
-                space.write(joinThis, null, Lease.FOREVER);
+                space.write(joinThis, trcJoin, Lease.FOREVER);
 
-                space.write(topicToTake, null, Lease.FOREVER);
+                space.write(topicToTake, trcJoin, Lease.FOREVER);
 
                 new TopicRoom(topicNr, topicName, userName, password, topicOwner);
+                trcJoin.commit();
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(null, "Topic does not exist");
+                try {
+                    trcJoin.abort();
+                } catch (CannotAbortException | RemoteException | UnknownTransactionException e1) {
+                    System.out.print("Failed to cancel the transaction.");
+                }
             }
         }
     }
@@ -279,11 +302,11 @@ public class Main extends JFrame implements RemoteEventListener {
             try {
                 inputReceived = Integer.parseInt(topicSelected);
             } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(null, "Input must be a number!");
+                JOptionPane.showMessageDialog(null, "Input must be a number!", null, JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            // 2. Getting a number of topics that exist on the space.
+            // 2.1 Getting password and topic owner of topic about to be deleted.
             try {
                 QueueItem temp = new QueueItem();
                 temp._topicNumber = inputReceived;
@@ -291,13 +314,15 @@ public class Main extends JFrame implements RemoteEventListener {
                 String retPwd = retQI._password;
                 String retOwner = retQI._topicOwner;
 
+                // 2.2 If topic's password and owner name match with currently logged-in user's password and user name, then it proceeds to delete topic.
                 if(retPwd.equals(password) & retOwner.equals(userName)){
 
                     // 3. Taking objects out from the space
+                    Transaction trcDelete = getTransactionCreated(800).transaction;
                     try{
                         QueueStatus qsTemp = new QueueStatus();
                         qsTemp.nextTopic = inputReceived;
-                        space.take(qsTemp, null, 500);
+                        space.take(qsTemp, trcDelete, 500);
 
                         TopicItem tiTemp = new TopicItem();
                         tiTemp._id = inputReceived;
@@ -310,20 +335,22 @@ public class Main extends JFrame implements RemoteEventListener {
                             QueueItem qiTemp = new QueueItem();
                             qiTemp._topicName = topicName;
                             qiTemp._commentNr = i;
-                            space.take(qiTemp, null, 500);
+                            space.take(qiTemp, trcDelete, 500);
                         }
 
                         // 4. Create a reference of deleted object. This is only for notifying about deleted topic.
                         DeletedItem deletedItem = new DeletedItem(inputReceived, topicName);
-                        space.write(deletedItem, null, TEN_MINS);
+                        space.write(deletedItem, trcDelete, TEN_MINS);
+                        trcDelete.commit();
                     }catch(Exception e){
-                        JOptionPane.showMessageDialog(null, "Topic does not exist");
+                        e.printStackTrace();
+                        trcDelete.abort();
                     }
                 }else{
-                    JOptionPane.showMessageDialog(null, "You can only delete your own topics.");
+                    JOptionPane.showMessageDialog(null, "You can only delete your own topics.", null, JOptionPane.ERROR_MESSAGE);
                 }
             }catch(Exception e){
-                e.printStackTrace();
+                JOptionPane.showMessageDialog(null, "Topic does not exist", null, JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -335,8 +362,9 @@ public class Main extends JFrame implements RemoteEventListener {
     private void enableNotifications(){
         int inputReceived;
 
-        // Part A - if !isCheckingNotif - if this bool is false, it runs logic allowing to get notifications about specified topics.
-        if (!isCheckingNotif){
+        // Part A - if !isNotifying - if this bool is false, it runs logic allowing to get notifications about specified topics.
+        // if it's 'true' then it means it's already listening for notifications, and PART B of the method is being active.
+        if (!isNotifying){
             // 1. Validation.
             topicSelected = "";
             topicSelected = JOptionPane.showInputDialog("Type in the TOPIC NUMBER to get notifications about it");
@@ -347,13 +375,25 @@ public class Main extends JFrame implements RemoteEventListener {
                 try {
                     inputReceived = Integer.parseInt(topicSelected);
                 } catch (NumberFormatException e) {
-                    JOptionPane.showMessageDialog(null, "Input must be a number!");
+                    JOptionPane.showMessageDialog(null, "Input must be a number!", null, JOptionPane.ERROR_MESSAGE);
                     return;
+                }
+                // 1.2 - Checking if topic exists.
+                TopicItem checkIfExists = new TopicItem();
+                checkIfExists._id = inputReceived;
+                try {
+                    TopicItem result = (TopicItem) space.read(checkIfExists, null, 500);
+                    if (result == null){
+                        JOptionPane.showMessageDialog(null, "Topic does not exist", null, JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                } catch (UnusableEntryException | TransactionException | InterruptedException | RemoteException e) {
+                    e.printStackTrace();
                 }
 
                 // 2. Makes NOTIFY button to Disable Notifications on second click.
                 btn_notify.setText("Disable notifications");
-                isCheckingNotif = true;
+                isNotifying = true;
 
                 // 3. Enables listening for notifications.
                 RemoteEventListener theStub = null;
@@ -389,22 +429,20 @@ public class Main extends JFrame implements RemoteEventListener {
 
                     EventRegistration evDel = space.notify(diTemp, null, theStub, TEN_MINS, moDelete);
                     notifyDeleteLM = evDel.getLease().createLeaseMap(TEN_MINS);
-
-
                 } catch (TransactionException | RemoteException e) {
                     e.printStackTrace();
                 }
                 return;
             }
-        } // Part B - if true (it means notifications are enabled) it cancels leases of objects that wait for notification-triggering event to occur.
-        if (isCheckingNotif){
+        } // Part B - if true (it means notifications are enabled) it cancels leases of objects that wait for notification-triggering events to occur.
+        if (isNotifying){
             try {
                 notifyCommentLM.cancelAll();
                 notifyDeleteLM.cancelAll();
             } catch (LeaseMapException | RemoteException e) {
                 e.printStackTrace();
             }
-            isCheckingNotif = false;
+            isNotifying = false;
             btn_notify.setText("Notify");
             txt_notification.setText("No notifications.");
         }
@@ -418,6 +456,27 @@ public class Main extends JFrame implements RemoteEventListener {
         SimpleDateFormat sdf = new SimpleDateFormat("HH.mm.ss");
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
         return sdf.format(timestamp)+"";
+    }
+
+    /**
+     * Creates Transaction.Created object, required by createTopic / joinTopic / deleteTopic methods for secured writes / takes.
+     * @param leaseTime - lease given for transaction to happen.
+     * @return - returns Transaction.Created object.
+     */
+    static Transaction.Created getTransactionCreated(int leaseTime){
+        TransactionManager tManager = SpaceUtils.getManager();
+        if (tManager == null){
+            System.err.println("Failed to find the TransactionManager");
+            System.exit(1);
+        }
+
+        Transaction.Created trc = null;
+        try{
+            trc = TransactionFactory.create(tManager, leaseTime);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        return trc;
     }
 
     public static void main(String[] args){

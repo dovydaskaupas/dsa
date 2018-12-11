@@ -13,10 +13,10 @@ public class CommentPublisher extends TimerTask {
     private JavaSpace space;
     private String topicSelected;
     private JTextArea txtArea;
-    private JLabel lable;
+    private JLabel lableTop, lableUs;
     private String loggedAs;
 
-    CommentPublisher(String topic, JTextArea txtAr, JLabel lbl, String loggedUser){
+    CommentPublisher(String topic, JTextArea txtAr, JLabel lblTopic, JLabel lblUser, String loggedUser){
         space = SpaceUtils.getSpace();
         if (space == null){
             System.err.println("Failed to find the JavaSpace");
@@ -25,7 +25,8 @@ public class CommentPublisher extends TimerTask {
 
         topicSelected = topic;
         txtArea = txtAr;
-        lable = lbl;
+        lableTop = lblTopic;
+        lableUs = lblUser;
         loggedAs = loggedUser;
     }
 
@@ -49,7 +50,7 @@ public class CommentPublisher extends TimerTask {
             TopicItem tl = new TopicItem();
             tl._topicName = topicSelected;
 
-            if (topicSelected == null){
+            if (topicSelected == null) {
                 return;
             }
 
@@ -75,8 +76,9 @@ public class CommentPublisher extends TimerTask {
                 String commentOwner = queueItem._commentOwner;
                 String isPrivate = queueItem._isPrivate;
 
-                // Toolbar label.
-                lable.setText("Topic Owner: "  + topicOwner + "  |  Topic Name: " + topicNumber+ "." + topicSelected + "  |  " + "Logged as: " + loggedAs);
+                // Toolbar labels.
+                lableTop.setText("Topic Owner: "  + topicOwner + "  |  Topic Name: " + topicNumber+ "." + topicSelected);
+                lableUs.setText("Logged as: " + loggedAs);
 
                 // Determine the form and state of comment.
                 if (!comm.equals("")){
