@@ -138,16 +138,6 @@ public class TopicRoom extends JFrame {
                 result.incrementCommentNr();
                 int commentNr = result._commentNr;
 
-                System.out.println("Topic nr: " + topicNumber);
-                System.out.println("topic name: " + topicName);
-                System.out.println("user nam: " + userName);
-                System.out.println("pwd: " + password);
-                System.out.println("comment" + comment);
-                System.out.println("comnr: " + commentNr);
-                System.out.println("ownr nm: " + ownerName);
-                System.out.println("comment owner: " + userName);
-
-
                 QueueItem newTopic = new QueueItem(topicNumber, topicName, userName, password, Main.getTimestamp(), comment, commentNr, ownerName, userName, isPrivate);
                 space.write(newTopic, trcComment, Lease.FOREVER);
 
