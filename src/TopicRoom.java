@@ -13,14 +13,14 @@ import java.rmi.RemoteException;
 import java.util.Timer;
 
 /**
- * Class that is responsible for implementing interface for TopicRoom,
- * and posting new comments.
+ * This class implements the interface for TopicRoom,
+ * and functionality for posting comments.
  */
 public class TopicRoom extends JFrame {
 
+    private JavaSpace space;
     private static String topicName, userName, password, ownerName;
     private static int topicNumber;
-    private JavaSpace space;
     private static JTextArea txtAr_chatArea;
     private static JLabel lbl_topicName, lbl_userName;
     private JTextField txt_comment;
@@ -34,6 +34,7 @@ public class TopicRoom extends JFrame {
         }
 
         initInterface();
+
         topicNumber = topicNr;
         topicName = topic;
         userName = userN;
@@ -45,6 +46,7 @@ public class TopicRoom extends JFrame {
         timer.schedule(new CommentPublisher(topicName, txtAr_chatArea, lbl_topicName, lbl_userName, userName), 0, 2000);
     }
 
+    // interface
     private void initInterface(){
         JFrame frame = new JFrame("Bulletin Board Login");
 
@@ -120,7 +122,7 @@ public class TopicRoom extends JFrame {
     private void postComment(){
         String isPrivate;
         Transaction trcComment = Main.getTransactionCreated(800).transaction;
-        try{
+        try{ // Checks if private messaging CheckBox is selected.
             if (cb_privateMessaging.isSelected()){
                 isPrivate = "yes";
             }else{
@@ -135,11 +137,18 @@ public class TopicRoom extends JFrame {
                 topicList._id = topicNumber;
                 TopicItem result = (TopicItem) space.take(topicList, trcComment, 500);
 
+                // Informs user about deleted topic.
+                if(result == null){
+                    JOptionPane.showMessageDialog(null, "This topic has been deleted!", null, JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
                 result.incrementCommentNr();
                 int commentNr = result._commentNr;
 
-                QueueItem newTopic = new QueueItem(topicNumber, topicName, userName, password, Main.getTimestamp(), comment, commentNr, ownerName, userName, isPrivate);
-                space.write(newTopic, trcComment, Lease.FOREVER);
+                // New comment info.
+                QueueItem newComment = new QueueItem(topicNumber, topicName, userName, password, Main.getTimestamp(), comment, commentNr, ownerName, userName, isPrivate);
+                space.write(newComment, trcComment, Lease.FOREVER);
 
                 space.write(result, trcComment, Lease.FOREVER);
                 txt_comment.setText("");
@@ -155,5 +164,53 @@ public class TopicRoom extends JFrame {
             }
         }
     }
+
+   /* private void selectTopic(){
+        String topicSelected = "";
+        topicSelected = JOptionPane.showInputDialog("Type in the TOPIC NUMBER to Join");
+        if (topicSelected != null){
+            if(topicSelected.length() < 1){ return; }
+            int inputReceived;
+
+            try {
+                inputReceived = Integer.parseInt(topicSelected);
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(null, "Input must be a number!", null, JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Transaction for TopicItem take/write, and QueueItem write operations.
+            Transaction trcJoin = Main.getTransactionCreated(800).transaction;
+            try {
+                TopicItem template = new TopicItem();
+                template._id = inputReceived;
+
+                TopicItem topicToJoin = (TopicItem) space.take(template, null, 500);
+                topicToJoin.incrementCommentNr();
+
+                topicNumber = topicToTake._id;
+                //int topicNr = topicToTake._id;
+                String topicName = topicToTake._topicName;
+                String topicOwner = topicToTake._topicOwner;
+                int commentNr = topicToTake._commentNr;
+
+                QueueItem joinThis = new QueueItem(topicNr, topicName, userName, password, Main.getTimestamp(), "", commentNr, topicOwner, userName, "");
+                space.write(joinThis, trcJoin, Lease.FOREVER);
+
+                space.write(topicToTake, trcJoin, Lease.FOREVER);
+
+                //new TopicRoom(topicNr, topicName, userName, password, topicOwner);
+                trcJoin.commit();
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null, "Topic does not exist");
+                try {
+                    trcJoin.abort();
+                } catch (CannotAbortException | RemoteException | UnknownTransactionException e1) {
+                    System.out.print("Failed to cancel the transaction.");
+                }
+            }
+        }
+    }*/
+
     public static void main(String[] args){}
 }

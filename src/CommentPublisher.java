@@ -31,31 +31,30 @@ public class CommentPublisher extends TimerTask {
     }
 
     /**
-     * Every X seconds runs checkSpace() method checking for new comments.
+     * Every X seconds runs findComments() method checking for new comments.
      */
     @Override
     public void run() {
-        checkSpace();
+        findComments();
     }
 
     /**
-     * Reads the space for comments and adds them all to the ArrayList.
+     * Reads the space for new comments then adds them all to the ArrayList.
      * Every item from the ArrayList is appended to the textArea.
      */
-    private void checkSpace(){
+    private void findComments(){
+        // Storing comments.
         ArrayList<String> comments = new ArrayList<>();
         String comment;
 
         try {
             TopicItem tl = new TopicItem();
             tl._topicName = topicSelected;
-
             if (topicSelected == null) {
                 return;
             }
 
             TopicItem result = (TopicItem) space.read(tl,null, 500);
-
             if (result == null){
                 return;
             }
@@ -64,6 +63,8 @@ public class CommentPublisher extends TimerTask {
             String topicOwner = result._topicOwner;
             int commentAmount = result._commentNr;
 
+            // Loops through every single QueueItem object as many times as there are comments posted within specific topic ID.
+            // Then returns required data
             for(int i = 1; i < commentAmount + 1; i++){
                 QueueItem template = new QueueItem();
                 template._topicName = topicSelected;
@@ -76,11 +77,11 @@ public class CommentPublisher extends TimerTask {
                 String commentOwner = queueItem._commentOwner;
                 String isPrivate = queueItem._isPrivate;
 
-                // Toolbar labels.
+                // Labels used as a toolbar, showing topic id / topic name / topic owner / name of logged-in user.
                 lableTop.setText("Topic Owner: "  + topicOwner + "  |  Topic Name: " + topicNumber+ "." + topicSelected);
                 lableUs.setText("Logged as: " + loggedAs);
 
-                // Determine the form and state of comment.
+                // Determine the format and state of comment.
                 if (!comm.equals("")){
                     if(isPrivate.equals("yes")){
                         if(loggedAs.equals(topicOwner) || loggedAs.equals(commentOwner)){
@@ -99,7 +100,7 @@ public class CommentPublisher extends TimerTask {
                     }
                 }
 
-                // Adds comment to the array if yet it does not exist there.
+                // Adding comment to the array if yet it is not there.
                 if (!comments.contains(comment)){
                     comments.add(comment);
                 }

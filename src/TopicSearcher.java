@@ -9,8 +9,7 @@ import java.util.TimerTask;
 
 /**
  * A helper class, that is being called (from Main class, by Timer.scheduler) every X second/s,
- * to check if any TopicItem objects been added to the space. If so, they are printed to the
- * accessible topic list.
+ * to check if any TopicItem objects been added to the space. If so, they are printed on the topic list.
  */
 public class TopicSearcher extends TimerTask {
     private JTextArea textArea;
@@ -26,37 +25,38 @@ public class TopicSearcher extends TimerTask {
 
     @Override
     public void run() {
-        searchForTopics(textArea);
+        findTopics(textArea);
     }
 
     /**
-     * Method that reads all TopicItem objects from the space, adds them to the array list, and shows as the Topic List to the user.
+     * Method that reads all TopicItem objects from the space, adds them to the array list, and shows as the Topic List.
      * @param txtAr - text area to post topics on.
      */
-    private void searchForTopics(JTextArea txtAr){
+    private void findTopics(JTextArea txtAr){
         txtAr.setText("");
         txtAr.append("No topics at the moment. Write a new one!");
 
         // Creating an array list to store topics.
         ArrayList<String> topics = new ArrayList<>();
 
+        // JavaSpace05 is required to use Collections and MatchSet
         JavaSpace05 space = (JavaSpace05) SpaceUtils.getSpace();
         if (space == null) {
             System.err.println("JavaSpace not found.");
             System.exit(1);
         }
 
-        // Creating a collection to store a wild cards of TopicItem. Every topic has it's own TopicItem.
+        // Creating a collection to store wild cards of TopicItem objects. Each topic has it's own TopicItem object.
         Collection<TopicItem> templates = new ArrayList<>();
-
         TopicItem template = new TopicItem();
         templates.add(template);
 
-        try {
+        try { // Checking matching contents
             MatchSet results = space.contents(templates, null, 5000, 100);
             // Looping while true. Value becomes false when 'result' returned = null.
             boolean isItem = true;
             while(isItem){
+                // Getting data from each.
                 TopicItem topicsOnline = (TopicItem) results.next();
                 if(topicsOnline != null){
                     int topicNr = topicsOnline._id;

@@ -2,6 +2,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
+/**
+ * Class that provides interface and functionality for log-in menu.
+ */
 public class LoginScreen extends JFrame {
 
     private boolean hasLetter = false, hasDigit = false;
@@ -15,7 +18,7 @@ public class LoginScreen extends JFrame {
     private void initInterface(){
         frame = new JFrame("Bulletin Board Login");
 
-        addWindowFocusListener(new WindowAdapter() { // Check what this does.
+        addWindowFocusListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
                 System.exit(0);
@@ -45,7 +48,7 @@ public class LoginScreen extends JFrame {
         txt_username.setText("");
         txt_username.addKeyListener(new KeyAdapter() {
             public void keyTyped(KeyEvent e) {
-                // Alphanumeric input check.
+                // Alphanumeric input check to prevent other types of symbols being used as a user name.
                 char c = e.getKeyChar();
                 if (Character.isLetter(c)) {
                     hasLetter = true;
@@ -109,11 +112,11 @@ public class LoginScreen extends JFrame {
     }
 
     private void login(){
-        if(txt_username.getText().length() <3 ){
+        if(txt_username.getText().length() < 3 ){
             JOptionPane.showMessageDialog(null, "Username cannot be shorter than 3 symbols.", "Login Error!", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        if(txt_password.getText().length() <3 ){
+        if(txt_password.getText().length() < 3 ){
             JOptionPane.showMessageDialog(null, "Password cannot be shorter than 3 symbols.", "Login Error!", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -126,8 +129,11 @@ public class LoginScreen extends JFrame {
         return txt_username.getText();
     }
 
+    // Returns encrypted password.
     static String getPassword(){
-        return txt_password.getText();
+        String enteredPassword = txt_password.getText();
+        String salt = SecurityUtils.getSalt(30);
+        return SecurityUtils.generateSecurePassword(enteredPassword, salt);
     }
 
     public static void main(String[] args){

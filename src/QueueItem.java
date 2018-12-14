@@ -1,5 +1,8 @@
 import net.jini.core.entry.Entry;
 
+/**
+ * Storing information about comments.
+ */
 public class QueueItem implements Entry {
     public Integer _topicNumber;
     public String _topicName;

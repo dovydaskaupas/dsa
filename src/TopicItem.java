@@ -1,8 +1,7 @@
 import net.jini.core.entry.Entry;
 
 /**
- * Additional space entry, that helps to check how many topics exist on the space.
- * Used by createTopic() and joinTopic() in Main.java, and by checkSpace() in CommentPublisher.java.
+ * Stores information about topics that exist on the space.
  */
 public class TopicItem implements Entry {
     public Integer _id;

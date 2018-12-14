@@ -26,8 +26,8 @@ import java.text.SimpleDateFormat;
 import java.util.Timer;
 
 /**
- * This class serves as the main menu, allowing to Create, Join, Delete topics
- * and displays existing Topic List on the screen.
+ * This class implements an interface and functionality for the main menu.
+ * It allows to Create, Join, Delete, get notifications about topics, and displays Topic List that exists on the space.
  */
 public class Main extends JFrame implements RemoteEventListener {
 
@@ -38,7 +38,7 @@ public class Main extends JFrame implements RemoteEventListener {
     private String userName, password, topicSelected;
     private boolean isNotifying = false;
 
-    private final static String NEW_C = "newComm";
+    private final static String NEW_C = "newComm"; // Used for marshalled objects.
     private final static String DEL_C = "delComm";
     private final static int TEN_MINS = 1000 * 60 * 10;
 
@@ -52,15 +52,17 @@ public class Main extends JFrame implements RemoteEventListener {
             System.exit(1);
         }
 
+        // Gets username and hashed password.
         userName = LoginScreen.getUsername();
         password = LoginScreen.getPassword();
         initInterface(userName, password);
 
+        // Every 5 seconds searches for topics on the space.
         java.util.Timer timer = new Timer();
         timer.schedule(new TopicSearcher(txtAr_topicList), 0, 5000);
     }
 
-    @Override
+    @Override // When topic is selected for notifications, it notifies abotu new messages or when topic is deleted.
     public void notify(RemoteEvent remoteEvent){
         String unMarshalled = null;
 
@@ -73,7 +75,7 @@ public class Main extends JFrame implements RemoteEventListener {
             e.printStackTrace();
         }
 
-        // 2 marshalled objects have been associated with notifications.
+        // 2 marshalled objects have been associated with corresponding notifications.
         if(unMarshalled != null){
             if(unMarshalled.equals(NEW_C)){
                 txt_notification.setText("You have unread comments.");
@@ -115,6 +117,7 @@ public class Main extends JFrame implements RemoteEventListener {
 
         JTextField txt_userName = new JTextField();
         txt_userName.setText("Logged in as: " + un + ", " + pwd);
+        System.out.println(pwd);
         txt_userName.setEditable(false);
         jpw_centre.add(txt_userName);
 
@@ -196,14 +199,14 @@ public class Main extends JFrame implements RemoteEventListener {
         if (topicSelected == null){
             return;
         }
-        if (topicSelected.length() >= 1){
+        if (topicSelected.length() >= 1){ // If input is shorter than 1 length, then nothing happens.
 
             if (topicSelected.length() > 21){
                 JOptionPane.showMessageDialog(null, "Topic name can only be 21 symbols long.", null, JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            // Creating a transaction for QueueStatus take/write, QueueItem and TopicItem write operations.
+            // Creating a transaction for QueueStatus take/write, and QueueItem and TopicItem write operations.
             Transaction trcCreate = getTransactionCreated(1000).transaction;
             try{
                 // Receiving Topic Nr.
@@ -225,7 +228,7 @@ public class Main extends JFrame implements RemoteEventListener {
 
                 //Calling Topic room GUI.
                 new TopicRoom(topicNumber, topicSelected, userName, password, userName);
-                trcCreate.commit();
+                trcCreate.commit(); // Commiting the transaction when all write/take operations are completed.
             }catch(Exception e){
                 e.printStackTrace();
                 try {
@@ -262,6 +265,8 @@ public class Main extends JFrame implements RemoteEventListener {
                 TopicItem template = new TopicItem();
                 template._id = inputReceived;
 
+                // TopicItem's commentNumber value is incremented because when user joins the topic,
+                // a comment informing everyone about new user joining the topic room is posted.
                 TopicItem topicToTake = (TopicItem) space.take(template, null, 500);
                 topicToTake.incrementCommentNr();
 
@@ -289,7 +294,9 @@ public class Main extends JFrame implements RemoteEventListener {
     }
 
     /**
-     * Deletes objects from the space by pulling them out.
+     * Deletes selected object by pulling it out from the space. Only the actual owner can delete his topics.
+     * Real owner is determined by comparing logged-in user's userName and password (which is hashed),
+     * with topic owner's userName and password.
      */
     private void deleteTopic(){
         int inputReceived;
@@ -306,7 +313,7 @@ public class Main extends JFrame implements RemoteEventListener {
                 return;
             }
 
-            // 2.1 Getting password and topic owner of topic about to be deleted.
+            // 2.1 Getting the password and topic owner's name of a topic that is about to be deleted.
             try {
                 QueueItem temp = new QueueItem();
                 temp._topicNumber = inputReceived;
@@ -331,6 +338,7 @@ public class Main extends JFrame implements RemoteEventListener {
                         int commentAmount = removeTI._commentNr;
                         String topicName = removeTI._topicName;
 
+                        // Every QueueItem belonging for that topic is removed from the space
                         for(int i = 1; i < commentAmount + 1; i++) {
                             QueueItem qiTemp = new QueueItem();
                             qiTemp._topicName = topicName;
@@ -357,7 +365,7 @@ public class Main extends JFrame implements RemoteEventListener {
 
     /**
      * Enables / Disables receiving notifications about specified topic.
-     * Notifies about only: new comments, deleted topic.
+     * Notifies only about: new comments, deleted topic.
      */
     private void enableNotifications(){
         int inputReceived;
@@ -391,7 +399,7 @@ public class Main extends JFrame implements RemoteEventListener {
                     e.printStackTrace();
                 }
 
-                // 2. Makes NOTIFY button to Disable Notifications on second click.
+                // 2. Changes name of NOTIFY button to Disable Notifications, and enabling to disable notifications of 2nd click..
                 btn_notify.setText("Disable notifications");
                 isNotifying = true;
 
@@ -413,7 +421,7 @@ public class Main extends JFrame implements RemoteEventListener {
                     DeletedItem diTemp = new DeletedItem();
                     diTemp._id = inputReceived;
 
-                    // 4.2 Creating the Marshalled Object to help distinguish notifications.
+                    // 4.2 Creating the Marshalled Object to help to distinguish different actions.
                     MarshalledObject<String> moComment = null;
                     MarshalledObject<String> moDelete = null;
                     try {
@@ -460,7 +468,7 @@ public class Main extends JFrame implements RemoteEventListener {
 
     /**
      * Creates Transaction.Created object, required by createTopic / joinTopic / deleteTopic methods for secured writes / takes.
-     * @param leaseTime - lease given for transaction to happen.
+     * @param leaseTime - lease time given for transaction to happen.
      * @return - returns Transaction.Created object.
      */
     static Transaction.Created getTransactionCreated(int leaseTime){
